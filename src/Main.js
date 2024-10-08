@@ -4,20 +4,36 @@ import ItemList from './ItemList'
 import { initialCourts } from './CourtsList'
 
 function DefaultPage() {
-  const [players, setPlayers] = useState([]);
   const [playerName, setPlayerName] = useState('');
   const [courts, setCourts] = useState(initialCourts);
   const [mixed, setMixed] = useState([]);
+
+  const storageKey = 'badmintonPlayersList';
+
+  var initialPlayers = [];
+  var playersString = localStorage.getItem(storageKey);
+  if (playersString !== null) {
+    initialPlayers = JSON.parse(playersString);
+  }
+
+  const [players, setPlayers] = useState(initialPlayers);
+
+  function storePlayersInLocalStorage(nextPlayers) {
+    localStorage.setItem(storageKey, JSON.stringify(nextPlayers));
+  }
 
   function handleAddNewPlayer() {
     if (playerName === '') {
       return;
     }
     
-    setPlayers([
+    var nextPlayers = [
       ...players,
       { id: players.length, name: playerName, active: false }
-    ]);
+    ];
+
+    storePlayersInLocalStorage(nextPlayers);
+    setPlayers(nextPlayers);
     setPlayerName('');
   }
 
@@ -25,6 +41,7 @@ function DefaultPage() {
     const nextPlayers = [...players];
     const currentPlayer = nextPlayers.find(p => p.id === id);
     currentPlayer.active = checked;
+    storePlayersInLocalStorage(nextPlayers);
     setPlayers(nextPlayers);
   }
 
