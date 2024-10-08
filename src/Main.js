@@ -13,6 +13,7 @@ function DefaultPage() {
     if (playerName === '') {
       return;
     }
+    
     setPlayers([
       ...players,
       { id: players.length, name: playerName, active: false }
