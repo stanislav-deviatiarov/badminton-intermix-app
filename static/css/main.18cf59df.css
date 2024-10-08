@@ -1,0 +1,2 @@
+body{background-color:#f5f5f5;font-size:large;margin:0}body,ul{padding:0}ul{column-count:2;-webkit-columns:2;-moz-columns:2;list-style-type:none;margin:5px 0 0;overflow:auto}ul.players{height:30vh}ul.courts{height:15vh}h1{font-size:large;font-style:normal;margin:0;padding:0}div.courts-back,div.players-back{background:linear-gradient(180deg,#faebd7,#f5f5f5,#faebd7);padding:5px}div.mix-back{padding:5px}div.mix-back,div.mix-block-result{background:linear-gradient(180deg,#faebd7,#f5f5f5)}div.mix-block-result{margin:2px;padding:3px}
+/*# sourceMappingURL=main.18cf59df.css.map*/
