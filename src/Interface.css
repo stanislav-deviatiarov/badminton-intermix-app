@@ -11,17 +11,6 @@ ul {
   margin-top: 5px;
   padding: 0; 
   overflow: auto;
-  columns: 2;
-  -webkit-columns: 2;
-  -moz-columns: 2;
-}
-
-ul.players {
-  height: 30vh;
-}
-
-ul.courts {
-  height: 15vh;
 }
 
 h1 {

@@ -2,37 +2,26 @@ import './Interface.css';
 import { useState } from 'react';
 import ItemList from './ItemList'
 import { initialCourts } from './CourtsList'
+import { savePlayersToStorage, loadPlayersFromStorage, saveCourtsToStorage, loadCourtsFromStorage } from './Storage'
 
 function DefaultPage() {
   const [playerName, setPlayerName] = useState('');
-  const [courts, setCourts] = useState(initialCourts);
+  const [players, setPlayers] = useState(loadPlayersFromStorage());
+  let storedCourts = loadCourtsFromStorage();
+  const [courts, setCourts] = useState(storedCourts.length === 0 ? initialCourts : storedCourts);
   const [mixed, setMixed] = useState([]);
-
-  const storageKey = 'badmintonPlayersList';
-
-  var initialPlayers = [];
-  var playersString = localStorage.getItem(storageKey);
-  if (playersString !== null) {
-    initialPlayers = JSON.parse(playersString);
-  }
-
-  const [players, setPlayers] = useState(initialPlayers);
-
-  function storePlayersInLocalStorage(nextPlayers) {
-    localStorage.setItem(storageKey, JSON.stringify(nextPlayers));
-  }
 
   function handleAddNewPlayer() {
     if (playerName === '') {
       return;
     }
     
-    var nextPlayers = [
+    let nextPlayers = [
       ...players,
       { id: players.length, name: playerName, active: false }
     ];
 
-    storePlayersInLocalStorage(nextPlayers);
+    savePlayersToStorage(nextPlayers);
     setPlayers(nextPlayers);
     setPlayerName('');
   }
@@ -41,7 +30,7 @@ function DefaultPage() {
     const nextPlayers = [...players];
     const currentPlayer = nextPlayers.find(p => p.id === id);
     currentPlayer.active = checked;
-    storePlayersInLocalStorage(nextPlayers);
+    savePlayersToStorage(nextPlayers);
     setPlayers(nextPlayers);
   }
 
@@ -49,6 +38,7 @@ function DefaultPage() {
     const nextCourts = [...courts];
     const currentCourt = nextCourts.find(c => c.id === id);
     currentCourt.active = checked;
+    saveCourtsToStorage(nextCourts);
     setCourts(nextCourts);
   }
 
@@ -70,11 +60,11 @@ function DefaultPage() {
     const playersOnCourt = 4;
     const activePlayersCount = activePlayers.length;
 
-    var usedPlayerIndexes = [];
-    var currentCourtIndex = 0;
+    let usedPlayerIndexes = [];
+    let currentCourtIndex = 0;
 
     while (activePlayersCount - usedPlayerIndexes.length > 0) {
-      var newIndex = getRandomInt(0, activePlayersCount - 1);
+      let newIndex = getRandomInt(0, activePlayersCount - 1);
       if (usedPlayerIndexes.find(i => i === newIndex) === undefined) {
         if (currentCourtIndex < activeCourts.length) {
           if (activeCourts[currentCourtIndex].players.length < playersOnCourt) {
@@ -89,11 +79,11 @@ function DefaultPage() {
       }
     }
 
-    var mixedCourts = [];
-    for (var court of activeCourts) {
+    let mixedCourts = [];
+    for (let court of activeCourts) {
       if (court.players.length > 0) {
-        var courtPlayers = [];
-        for (var player of court.players) {
+        let courtPlayers = [];
+        for (let player of court.players) {
           courtPlayers.push(<li>{player}</li>);
         }
         mixedCourts.push(<div className='mix-block-result'><h1>{court.name}</h1><ul>{courtPlayers}</ul></div>)
