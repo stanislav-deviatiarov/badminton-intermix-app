@@ -34,6 +34,12 @@ function DefaultPage() {
     setPlayers(nextPlayers);
   }
 
+  function handlePlayerDelete(playerId) {
+    const nextPlayers = players.filter(p => p.id !== playerId);
+    savePlayersToStorage(nextPlayers);
+    setPlayers(nextPlayers);
+  }
+
   function handleCourtToggle(id, checked) {
     const nextCourts = [...courts];
     const currentCourt = nextCourts.find(c => c.id === id);
@@ -97,9 +103,11 @@ function DefaultPage() {
   <>
   <div className='players-back'>
     <h1>Список гравців</h1>
-    <input type='text' onChange={e => setPlayerName(e.target.value)} value={playerName} />
-    <input type='button' value='Додати гравця' style={{'margin-left': '5px'}} onClick={handleAddNewPlayer} />
-    <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} />
+    <div className='addNewPlayer'>
+      <input type='text' maxLength={12} onChange={e => setPlayerName(e.target.value)} value={playerName} placeholder='До 12 символів' />
+      <input type='button' value='Додати' style={{'margin-left': '5px'}} onClick={handleAddNewPlayer} />
+    </div>
+    <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} />
   </div>
   <div className='courts-back'>
     <h1>Список кортів</h1>

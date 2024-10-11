@@ -1,6 +1,6 @@
 body {
   background-color: whitesmoke;
-  font-size: large;
+  font-size: x-large;
   padding: 0;
   margin: 0;
 }
@@ -15,28 +15,80 @@ ul {
 
 h1 {
   font-style: normal;
-  font-size: large;
+  font-size: x-large;
   margin: 0;
   padding: 0;
 }
 
-div.players-back {
-  background: linear-gradient(to bottom, antiquewhite, whitesmoke, antiquewhite);
-  padding: 5px;
-}
-
-div.courts-back {
-  padding: 5px;
-  background: linear-gradient(to bottom, antiquewhite, whitesmoke, antiquewhite);
-}
-
-div.mix-back {
-  background: linear-gradient(to bottom, antiquewhite, whitesmoke);
+div.players-back, div.courts-back, div.mix-back {
   padding: 5px;
 }
 
 div.mix-block-result {
   margin: 2px;
   padding: 3px;
-  background: linear-gradient(to bottom, antiquewhite, whitesmoke);
+}
+
+.listItem[data-active=true] {
+  background: linear-gradient(to bottom, whitesmoke, lightgray);
+}
+
+.listItem[data-active=false] {
+  background-color: whitesmoke;
+}
+
+.listItem label {
+  display: block;
+  width: 100%;
+}
+
+.listItem input {
+  width: 25px;
+  height: 25px;
+}
+
+.listItem span {
+  font-size: x-large;
+  font-weight: bold;
+  vertical-align: top;
+  text-align: center;
+}
+
+ul.courts .listItem .deleteButton {
+  visibility: hidden;
+}
+
+ul.players .listItem .deleteButton {
+  vertical-align: text-top;
+  float: right;
+  margin-top: 3px;
+  margin-right: 3px;
+  font-weight: bold;
+  background-color: crimson;
+  color: whitesmoke;
+  border-radius: 5px;
+}
+
+input[type=button] {
+  background-color: darkgreen;
+  color: whitesmoke;
+  border-radius: 3px;
+  border-width: 0px;
+  font-weight: bold;
+  font-size: large;
+}
+
+div.addNewPlayer input[type=button] {
+  float: right;
+  margin: 2px;
+}
+
+div.addNewPlayer input[type=text] {
+  display:inline-block;
+  width:calc(100% - 100px);
+  font-size: large;
+}
+
+div.mix-back input[type=button] {
+  width: 100%;
 }
