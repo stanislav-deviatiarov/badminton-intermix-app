@@ -36,6 +36,11 @@ function DefaultPage() {
 
   function handlePlayerDelete(playerId) {
     const nextPlayers = players.filter(p => p.id !== playerId);
+
+    for (let index in nextPlayers) {
+      nextPlayers[index].id = index;
+    }
+
     savePlayersToStorage(nextPlayers);
     setPlayers(nextPlayers);
   }
