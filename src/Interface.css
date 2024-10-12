@@ -29,6 +29,23 @@ div.mix-block-result {
   padding: 3px;
 }
 
+div.mix-block-result ul.resting {
+  text-align: center;
+  background: linear-gradient(to bottom, lightblue, whitesmoke, lightblue);
+}
+
+div.mix-block-result li.first {
+  text-align: center;
+  background-color: lightblue;
+  background: linear-gradient(to bottom, lightblue, whitesmoke);
+}
+
+div.mix-block-result li.second {
+  text-align: center;
+  background: linear-gradient(to bottom, whitesmoke, lightblue);
+  margin-bottom: 5px;
+}
+
 .listItem[data-active=true] {
   background: linear-gradient(to bottom, whitesmoke, lightgray);
 }
