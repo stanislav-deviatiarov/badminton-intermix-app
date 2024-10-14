@@ -128,7 +128,7 @@ function DefaultPage() {
   return ( 
   <>
   <div className='players-back'>
-    <h1>Список гравців</h1>
+    <h1>Крок 1: Оберіть гравців</h1>
     <div className='addNewPlayer'>
       <input type='text' maxLength={12} onChange={e => setPlayerName(e.target.value)}
       value={playerName} placeholder='До 12 символів' />
@@ -136,12 +136,14 @@ function DefaultPage() {
     </div>
     <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} />
   </div>
+  <div className='players-filler'></div>
   <div className='courts-back'>
-    <h1>Список кортів</h1>
+    <h1>Крок 2: Оберіть корти</h1>
     <ItemList itemClass="courts" listElements={courts} onToggle={handleCourtToggle} />
   </div>
+  <div className='courts-filler'></div>
   <div className='mix-back'>
-    <input type='button' value='Розмістити гравців на кортах' style={{'margin-bottom': '5px'}} onClick={handleMixPlayers} />
+    <input type='button' value='Порахувати' style={{'margin-bottom': '5px'}} onClick={handleMixPlayers} />
     {mixed}
   </div>
   </>
