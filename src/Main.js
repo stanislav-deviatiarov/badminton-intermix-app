@@ -112,11 +112,17 @@ function DefaultPage() {
     }
 
     if (restingPlayers.length !== 0 || activePlayersCount > usedPlayerIndexes.length) {
-      restingPlayers = restingPlayers.concat(activePlayers.filter(ap => !usedPlayerIndexes.includes(ap.id)).map(rp => rp.name));
+      for (let index = 0; index < activePlayers.length; index++) {
+        if (!usedPlayerIndexes.includes(index)) {
+          restingPlayers.push(activePlayers[index].name);
+        }
+      }
+
       let resting = [];
       for (let player of restingPlayers) {
         resting.push(<li>{player}</li>);
       }
+
       mixedCourts.push(
       <div className='mix-block-result'><h1>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває' }</h1>
       <ul className='resting'>{resting}</ul></div>);
