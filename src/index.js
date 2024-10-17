@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './Interface.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import DefaultPage from './Main';
 import reportWebVitals from './reportWebVitals';
 

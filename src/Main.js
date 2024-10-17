@@ -132,13 +132,13 @@ function DefaultPage() {
   }
 
   return ( 
-  <>
+  <div className='container container-main'>
   <div className='players-back'>
     <h1>Крок 1: Оберіть гравців</h1>
     <div className='addNewPlayer'>
       <input type='text' maxLength={12} onChange={e => setPlayerName(e.target.value)}
       value={playerName} placeholder='До 12 символів' />
-      <input type='button' value='Додати' style={{'margin-left': '5px'}} onClick={handleAddNewPlayer} />
+      <input type='button' className='btn btn-primary' value='Додати' onClick={handleAddNewPlayer} />
     </div>
     <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} />
   </div>
@@ -149,10 +149,10 @@ function DefaultPage() {
   </div>
   <div className='courts-filler'></div>
   <div className='mix-back'>
-    <input type='button' value='Порахувати' style={{'margin-bottom': '5px'}} onClick={handleMixPlayers} />
+    <input className='btn btn-small btn-primary' type='button' value='Порахувати' onClick={handleMixPlayers} />
     {mixed}
   </div>
-  </>
+  </div>
   );
 }
 
