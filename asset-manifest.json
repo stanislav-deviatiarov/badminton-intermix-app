@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/badminton-intermix-app/static/css/main.ed1eec54.css",
-    "main.js": "/badminton-intermix-app/static/js/main.177b8932.js",
+    "main.css": "/badminton-intermix-app/static/css/main.f0167b8c.css",
+    "main.js": "/badminton-intermix-app/static/js/main.f7947793.js",
     "static/js/453.0b7c7b0a.chunk.js": "/badminton-intermix-app/static/js/453.0b7c7b0a.chunk.js",
     "index.html": "/badminton-intermix-app/index.html",
-    "main.ed1eec54.css.map": "/badminton-intermix-app/static/css/main.ed1eec54.css.map",
-    "main.177b8932.js.map": "/badminton-intermix-app/static/js/main.177b8932.js.map",
+    "main.f0167b8c.css.map": "/badminton-intermix-app/static/css/main.f0167b8c.css.map",
+    "main.f7947793.js.map": "/badminton-intermix-app/static/js/main.f7947793.js.map",
     "453.0b7c7b0a.chunk.js.map": "/badminton-intermix-app/static/js/453.0b7c7b0a.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.ed1eec54.css",
-    "static/js/main.177b8932.js"
+    "static/css/main.f0167b8c.css",
+    "static/js/main.f7947793.js"
   ]
 }
