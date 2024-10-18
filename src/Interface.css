@@ -1,4 +1,4 @@
-body {
+/* body {
   --main-bg-color: whitesmoke;
   --players-bg-color: rgb(181, 119, 239);
   --courts-bg-color: rgb(182, 230, 133);
@@ -163,4 +163,8 @@ div.players-filler {
 div.courts-filler {
   background: linear-gradient(to bottom, var(--courts-bg-color), var(--main-bg-color), var(--mixed-bg-color));
   height: 50px;
+} */
+ 
+ul {
+  list-style-type: none;
 }
