@@ -31,56 +31,56 @@ h1 {
   padding: 0;
 }
 
-div.players-back {
+.players-back {
   padding: 5px;
-  background-color: var(--players-bg-color);
+  /* background-color: var(--players-bg-color); */
 }
 
-div.courts-back {
+.courts-back {
   padding: 5px;
-  background-color: var(--courts-bg-color);
+  /* background-color: var(--courts-bg-color); */
 }
 
-div.mix-back {
+.mix-back {
   padding: 5px;
-  background-color: var(--mixed-bg-color);
+  /* background-color: var(--mixed-bg-color); */
 }
 
-div.mix-block-result {
+.mix-block-result {
   margin: 2px;
   padding: 3px;
 }
 
-div.mix-block-result ul.resting {
+.mix-block-result ul.resting {
   text-align: center;
-  background: linear-gradient(to bottom, var(--mixed-bg-color), var(--main-bg-color), var(--mixed-bg-color));
+  /* background: linear-gradient(to bottom, var(--mixed-bg-color), var(--main-bg-color), var(--mixed-bg-color)); */
 }
 
-div.mix-block-result li.first {
+.mix-block-result li.first {
   text-align: center;
-  background: linear-gradient(to bottom, var(--mixed-bg-color), var(--main-bg-color));
+  /* background: linear-gradient(to bottom, var(--mixed-bg-color), var(--main-bg-color)); */
 }
 
-div.mix-block-result li.second {
+.mix-block-result li.second {
   text-align: center;
-  background: linear-gradient(to bottom, var(--main-bg-color), var(--mixed-bg-color));
+  /* background: linear-gradient(to bottom, var(--main-bg-color), var(--mixed-bg-color)); */
   margin-bottom: 5px;
 }
 
 .players .listItem[data-active=true] {
-  background: linear-gradient(to bottom, var(--main-bg-color), var(--players-bg-color));
+  /* background: linear-gradient(to bottom, var(--main-bg-color), var(--players-bg-color)); */
 }
 
 .players .listItem[data-active=false] {
-  background-color: var(--players-bg-color);
+  /* background-color: var(--players-bg-color); */
 }
 
 .courts .listItem[data-active=true] {
-  background: linear-gradient(to bottom, var(--main-bg-color), var(--courts-bg-color));
+  /* background: linear-gradient(to bottom, var(--main-bg-color), var(--courts-bg-color)); */
 }
 
 .courts .listItem[data-active=false] {
-  background-color: var(--courts-bg-color);
+  /* background-color: var(--courts-bg-color); */
 }
 
 .listItem label {
@@ -96,16 +96,16 @@ div.mix-block-result li.second {
 .listItem span {
   font-size: x-large;
   font-weight: bold;
-  vertical-align: top;
+  vertical-align: bottom;
   text-align: center;
 }
 
 ul.courts {
-  background-color: var(--courts-bg-color);
+  /* background-color: var(--courts-bg-color); */
 }
 
 ul.players {
-  background-color: var(--players-bg-color);
+  /* background-color: var(--players-bg-color); */
 }
 
 ul.courts .listItem .deleteButton {
@@ -118,49 +118,44 @@ ul.players .listItem .deleteButton {
   margin-top: 3px;
   margin-right: 3px;
   font-weight: bold;
-  background-color: var(--delete-button-bg-color);
-  color: var(--delete-button-color);
+  /* background-color: var(--delete-button-bg-color); */
+  /* color: var(--delete-button-color); */
   border-radius: 5px;
 }
 
 input[type=button] {
-  background-color: var(--button-bg-color);
-  color: var(--button-color);
+  /* background-color: var(--button-bg-color); */
+  /* color: var(--button-color); */
   border-radius: 3px;
   border-width: 0px;
   font-weight: bold;
   font-size: large;
 }
 
-div.addNewPlayer input[type=button] {
-  height: 30px;
+.container.container-main {
+  margin-top: 40px;
+  margin-bottom: 40px;
+  padding: 40px;
+  border-radius: 10px;
+  background: #F8F9FB;
 }
 
-div.mix-back input[type=button] {
-  height: 40px;
-}
-
-div.addNewPlayer input[type=button] {
-  float: right;
-  margin: 2px;
-}
-
-div.addNewPlayer input[type=text] {
+.addNewPlayer input[type=text] {
   display:inline-block;
   width:calc(100% - 100px);
   font-size: large;
 }
 
-div.mix-back input[type=button] {
+.mix-back input[type=button] {
   width: 100%;
 }
 
-div.players-filler {
-  background: linear-gradient(to bottom, var(--players-bg-color), var(--main-bg-color), var(--courts-bg-color));
+.players-filler {
+  /* background: linear-gradient(to bottom, var(--players-bg-color), var(--main-bg-color), var(--courts-bg-color)); */
   height: 50px;
 }
 
-div.courts-filler {
-  background: linear-gradient(to bottom, var(--courts-bg-color), var(--main-bg-color), var(--mixed-bg-color));
+.courts-filler {
+  /* background: linear-gradient(to bottom, var(--courts-bg-color), var(--main-bg-color), var(--mixed-bg-color)); */
   height: 50px;
 }
