@@ -6,13 +6,20 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
+import { ThemeProvider, createTheme, useColorScheme } from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
+import { AppBar, Toolbar } from '@mui/material';
 
-function DefaultPage() {
+function MainPage() {
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState(loadPlayersFromStorage());
   let storedCourts = loadCourtsFromStorage();
   const [courts, setCourts] = useState(storedCourts.length === 0 ? initialCourts : storedCourts);
   const [mixed, setMixed] = useState([]);
+  const { mode, setMode } = useColorScheme();
 
   function handleAddNewPlayer() {
     if (playerName === '') {
@@ -134,8 +141,34 @@ function DefaultPage() {
     setMixed(mixedCourts);
   }
 
+  const handleChange = (event) => {
+    setMode(event.target.checked ? 'dark' : 'light');
+  }
+
   return ( 
-  <>
+  <Box
+  sx={{
+    bgcolor: 'background.default',
+    color: 'text.primary',
+    padding: 1
+  }}>
+  <Stack spacing={1}>
+  <AppBar position='static'>
+    <Toolbar>
+      <FormGroup>
+        <FormControlLabel
+          control={
+            <Switch
+            checked={mode === 'dark'}
+            onChange={handleChange}
+            aria-label='dark-theme-switch'
+            />
+          }
+          label={mode === 'dark' ? 'Темна тема' : 'Світла тема'}
+        />
+      </FormGroup>
+    </Toolbar>
+  </AppBar>
   <Typography variant="h5" gutterBottom>
   Крок 1: Оберіть гравців
   </Typography>
@@ -152,8 +185,21 @@ function DefaultPage() {
   <Button variant='contained' onClick={handleMixPlayers} size='medium'>Порахувати</Button>
   </Stack>
   {mixed}
-  </>
+  </Stack>
+  </Box>
   );
 }
 
-export default DefaultPage;
+const theme = createTheme({
+  colorSchemes: {
+    dark: true,
+  },
+});
+
+export default function ColorModePage() {
+  return (
+    <ThemeProvider theme={theme}>
+      <MainPage />
+    </ThemeProvider>
+  );
+}
