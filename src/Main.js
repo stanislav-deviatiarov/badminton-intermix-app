@@ -12,6 +12,7 @@ import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
 import { AppBar, Toolbar } from '@mui/material';
+import { Block } from '@mui/icons-material';
 
 function MainPage() {
   const [playerName, setPlayerName] = useState('');
@@ -114,10 +115,12 @@ function MainPage() {
         let courtPlayers = [];
         let firstItem = true;
         for (let player of court.players) {
-          courtPlayers.push(<li className={firstItem ? 'first' : 'second'}>{player}</li>);
+          courtPlayers.push(<Typography variant="h6" gutterBottom>{player}</Typography>);
           firstItem = !firstItem;
         }
-        mixedCourts.push(<div className='mix-block-result'><h1>{court.name}</h1><ul>{courtPlayers}</ul></div>)
+        mixedCourts.push(<div>
+        <Typography variant="h5" gutterBottom>{court.name}</Typography>
+        <Stack spacing={1}>{courtPlayers}</Stack></div>)
       }
     }
 
@@ -130,12 +133,12 @@ function MainPage() {
 
       let resting = [];
       for (let player of restingPlayers) {
-        resting.push(<li>{player}</li>);
+        resting.push(<Typography variant="h6" gutterBottom>{player}</Typography>);
       }
 
       mixedCourts.push(
-      <div className='mix-block-result'><h1>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває' }</h1>
-      <ul className='resting'>{resting}</ul></div>);
+      <div><Typography variant="h5" gutterBottom>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває' }</Typography>
+      <Stack>{resting}</Stack></div>);
     }
 
     setMixed(mixedCourts);
@@ -176,15 +179,17 @@ function MainPage() {
   <TextField fullWidth label="Ім'я гравця" variant='standard' onChange={e => setPlayerName(e.target.value)} maxLength={12} value={playerName} />
   <Button variant='contained' onClick={handleAddNewPlayer} size='medium'>Додати</Button>
   </Stack>
-  <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} allowDeletion={true} />
+  <ItemList listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} allowDeletion={true} />
   <Typography variant="h5" gutterBottom>
   Крок 2: Оберіть корти
   </Typography>
-  <ItemList itemClass="courts" listElements={courts} onToggle={handleCourtToggle} allowDeletion={false} />
+  <ItemList listElements={courts} onToggle={handleCourtToggle} allowDeletion={false} />
   <Stack>
   <Button variant='contained' onClick={handleMixPlayers} size='medium'>Порахувати</Button>
   </Stack>
+  <Stack spacing={2}>
   {mixed}
+  </Stack>
   </Stack>
   </Box>
   );
