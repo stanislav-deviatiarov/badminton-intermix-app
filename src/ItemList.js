@@ -31,7 +31,7 @@ export default function ItemList({allowDeletion, listElements, onToggle, onDelet
               size='large'
               />
           </ListItemIcon>
-          <ListItemText id={labelId} primary={p.name} />
+          <ListItemText id={labelId} primary={p.name} primaryTypographyProps={{fontSize: 'large'}} />
         </ListItemButton>
       </ListItem>)})}
     </List>
