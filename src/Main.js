@@ -1,10 +1,11 @@
-import './Interface.css';
 import { useState } from 'react';
 import ItemList from './ItemList'
 import { initialCourts } from './CourtsList'
 import { savePlayersToStorage, loadPlayersFromStorage, saveCourtsToStorage, loadCourtsFromStorage } from './Storage'
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
 
 function DefaultPage() {
   const [playerName, setPlayerName] = useState('');
@@ -28,11 +29,10 @@ function DefaultPage() {
     setPlayerName('');
   }
 
-  function handlePlayerToggle(id, checked) {
+  function handlePlayerToggle(id) {
     const nextPlayers = [...players];
     const currentPlayer = nextPlayers.find(p => p.id === id);
-    currentPlayer.active = checked;
-    console.log(checked);
+    currentPlayer.active = !currentPlayer.active;
     savePlayersToStorage(nextPlayers);
     setPlayers(nextPlayers);
   }
@@ -48,10 +48,10 @@ function DefaultPage() {
     setPlayers(nextPlayers);
   }
 
-  function handleCourtToggle(id, checked) {
+  function handleCourtToggle(id) {
     const nextCourts = [...courts];
     const currentCourt = nextCourts.find(c => c.id === id);
-    currentCourt.active = checked;
+    currentCourt.active = !currentCourt.active;
     saveCourtsToStorage(nextCourts);
     setCourts(nextCourts);
   }
@@ -136,20 +136,22 @@ function DefaultPage() {
 
   return ( 
   <>
-  <h2>Крок 1: Оберіть гравців</h2>
-  <TextField fullWidth label='До 12 символів' variant='standard' onChange={e => setPlayerName(e.target.value)} maxLength={12} value={playerName} />
+  <Typography variant="h5" gutterBottom>
+  Крок 1: Оберіть гравців
+  </Typography>
+  <Stack direction={'row'} spacing={2}>
+  <TextField fullWidth label="Ім'я гравця" variant='standard' onChange={e => setPlayerName(e.target.value)} maxLength={12} value={playerName} />
   <Button variant='contained' onClick={handleAddNewPlayer} size='medium'>Додати</Button>
-  <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} />
-  <div className='players-filler'></div>
-  <div className='courts-back'>
-    <h2>Крок 2: Оберіть корти</h2>
-    <ItemList itemClass="courts" listElements={courts} onToggle={handleCourtToggle} />
-  </div>
-  <div className='courts-filler'></div>
-  <div className='mix-back'>
-    <Button variant='contained' onClick={handleMixPlayers} size='medium'>Порахувати</Button>
-    {mixed}
-  </div>
+  </Stack>
+  <ItemList itemClass="players" listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} allowDeletion={true} />
+  <Typography variant="h5" gutterBottom>
+  Крок 2: Оберіть корти
+  </Typography>
+  <ItemList itemClass="courts" listElements={courts} onToggle={handleCourtToggle} allowDeletion={false} />
+  <Stack>
+  <Button variant='contained' onClick={handleMixPlayers} size='medium'>Порахувати</Button>
+  </Stack>
+  {mixed}
   </>
   );
 }

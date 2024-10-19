@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './Interface.css';
 import DefaultPage from './Main';
 import reportWebVitals from './reportWebVitals';
 import '@fontsource/roboto/300.css';
