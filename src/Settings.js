@@ -2,7 +2,6 @@ import { useColorScheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
-import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 
 export default function SettingsPage() {
@@ -16,7 +15,7 @@ export default function SettingsPage() {
             height: "100vh",
           }}>
             <FormGroup>
-            <FormControlLabel
+              <FormControlLabel
                 control={
                   <Switch
                   checked={mode === 'dark'}
@@ -27,8 +26,8 @@ export default function SettingsPage() {
                   />
                 }
                 label={mode === 'dark' ? 'Темна тема' : 'Світла тема'}
-            />
-        </FormGroup>
+              />
+          </FormGroup>
         </Container>
     );
 }

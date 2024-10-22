@@ -18,22 +18,25 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import React from 'react';
 
+const Pages = Object.freeze({
+  Settings: Symbol("Налаштування"),
+  Mixer: Symbol("Розміщення")
+});
+
 function MainPage() {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-  const [page, setPage] = useState('Mixer');
-  let mainPageTitle = '';
+  const [page, setPage] = useState(Pages.Mixer);
+  let mainPageTitle = page.description;
   let pageContent = null;
 
   switch (page) {
-    case 'Settings':
-      mainPageTitle = 'Налаштування';
+    case Pages.Settings:
       pageContent = <SettingsPage />;
       break;
 
     default:
-    case 'Mixer':
-      mainPageTitle = 'Розташування';
+    case Pages.Settings:
       pageContent = <MixerPage />;
       break;
   }
@@ -67,8 +70,8 @@ function MainPage() {
                 'aria-labelledby': 'basic-button',
               }}
             >
-              <MenuItem onClick={event => { setPage('Mixer'); setAnchorEl(null); }}>Розташування</MenuItem>
-              <MenuItem onClick={event => { setPage('Settings'); setAnchorEl(null); }}>Налаштування</MenuItem>
+              <MenuItem onClick={event => { setPage(Pages.Mixer); setAnchorEl(null); }}>{Pages.Mixer.description}</MenuItem>
+              <MenuItem onClick={event => { setPage(Pages.Settings); setAnchorEl(null); }}>{Pages.Settings.description}</MenuItem>
             </Menu>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               {mainPageTitle}
