@@ -6,6 +6,8 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
+import MixedItem from './MixedItem';
+import Paper from '@mui/material/Paper'
 
 export default function MixerPage() {
   const [playerName, setPlayerName] = useState('');
@@ -104,15 +106,7 @@ export default function MixerPage() {
     let mixedCourts = [];
     for (let court of activeCourts) {
       if (court.players.length > 0) {
-        let courtPlayers = [];
-        let firstItem = true;
-        for (let player of court.players) {
-          courtPlayers.push(<Typography variant="h6" gutterBottom>{player}</Typography>);
-          firstItem = !firstItem;
-        }
-        mixedCourts.push(<div>
-        <Typography variant="h5" gutterBottom>{court.name}</Typography>
-        <Stack spacing={1}>{courtPlayers}</Stack></div>)
+        mixedCourts.push(<MixedItem courtName={court.name} courtPlayers={court.players} />);
       }
     }
 
@@ -129,8 +123,8 @@ export default function MixerPage() {
       }
 
       mixedCourts.push(
-      <div><Typography variant="h5" gutterBottom>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває' }</Typography>
-      <Stack>{resting}</Stack></div>);
+      <div><Paper elevation={5} sx={{ padding: 1 }} ><Typography variant="h5" gutterBottom>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває' }</Typography>
+      <Stack>{resting}</Stack></Paper></div>);
     }
 
     setMixed(mixedCourts);
