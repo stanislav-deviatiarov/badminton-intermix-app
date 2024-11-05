@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import ItemList from './ItemList'
-import { initialCourts } from './CourtsList'
-import { savePlayersToStorage, loadPlayersFromStorage, saveCourtsToStorage, loadCourtsFromStorage } from './Storage'
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import { ThemeProvider, createTheme, useColorScheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import { AppBar, Toolbar } from '@mui/material';
-import { Block } from '@mui/icons-material';
 import MixerPage from './Mixer';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';

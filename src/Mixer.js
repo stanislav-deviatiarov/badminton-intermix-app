@@ -9,9 +9,34 @@ import Stack from '@mui/material/Stack';
 import MixedItem from './MixedItem';
 import Paper from '@mui/material/Paper'
 
+function CreateNewID() {
+  return Date.now().toString();
+}
+
+function ConvertPlayers(players) {
+  let newPlayers = [];
+  let shouldStore = false;
+  for (let player of players) {
+    if (player.id.toString().length < 5) {
+      shouldStore = true;
+      let currentId = player.id.toString();
+      newPlayers.push({ ...player, id: CreateNewID() + currentId });
+    } else {
+      newPlayers.push(player);
+    }
+  }
+  return { convertedPlayers: newPlayers, store: shouldStore };
+}
+
 export default function MixerPage() {
   const [playerName, setPlayerName] = useState('');
-  const [players, setPlayers] = useState(loadPlayersFromStorage());
+  const converted = ConvertPlayers(loadPlayersFromStorage());
+
+  if (converted.store) {
+    savePlayersToStorage(converted.convertedPlayers);
+  }
+
+  const [players, setPlayers] = useState(converted.convertedPlayers);
   let storedCourts = loadCourtsFromStorage();
   const [courts, setCourts] = useState(storedCourts.length === 0 ? initialCourts : storedCourts);
   const [mixed, setMixed] = useState([]);
@@ -23,7 +48,7 @@ export default function MixerPage() {
     
     let nextPlayers = [
       ...players,
-      { id: players.length, name: playerName, active: false }
+      { id: CreateNewID(), name: playerName, active: false }
     ];
 
     savePlayersToStorage(nextPlayers);
@@ -41,11 +66,6 @@ export default function MixerPage() {
 
   function handlePlayerDelete(playerId) {
     const nextPlayers = players.filter(p => p.id !== playerId);
-
-    for (let index in nextPlayers) {
-      nextPlayers[index].id = index;
-    }
-
     savePlayersToStorage(nextPlayers);
     setPlayers(nextPlayers);
   }

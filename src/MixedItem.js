@@ -1,7 +1,5 @@
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import { List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
-import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper'
 
