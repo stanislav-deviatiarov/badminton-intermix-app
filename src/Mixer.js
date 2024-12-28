@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ItemList from './ItemList'
 import { initialCourts } from './CourtsList'
-import { savePlayersToStorage, loadPlayersFromStorage, saveCourtsToStorage, loadCourtsFromStorage } from './Storage'
+import { savePlayersToStorage, loadPlayersFromStorage, saveCourtsToStorage, loadCourtsFromStorage, saveMixedObjectToStorage, loadDeviceIdFromStorage, saveDeviceIdToStorage } from './Storage'
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -31,6 +31,12 @@ function ConvertPlayers(players) {
 export default function MixerPage() {
   const [playerName, setPlayerName] = useState('');
   const converted = ConvertPlayers(loadPlayersFromStorage());
+
+  var deviceId = loadDeviceIdFromStorage();
+  if (deviceId === '') {
+    deviceId = CreateNewID();
+    saveDeviceIdToStorage(deviceId);
+  }
 
   if (converted.store) {
     savePlayersToStorage(converted.convertedPlayers);
@@ -82,6 +88,47 @@ export default function MixerPage() {
     const minCeiled = Math.ceil(min);
     const maxFloored = Math.floor(max);
     return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
+  }
+
+  function postStat(statObject) {
+    saveMixedObjectToStorage(statObject);
+
+    fetch("https://localhost:7150/api/Stat/PostGameDetails", {
+      method: "POST",
+      headers: { "Content-type": "application/json; charset=UTF-8" },
+      body: JSON.stringify(statObject)
+    })
+    .then(response => console.log(response.status))
+    .catch((response) => {
+      console.log(response.status, response.statusText);
+    });
+  }
+
+  function getDateTime() {
+    var now     = new Date(); 
+    var year    = now.getFullYear();
+    var month   = now.getMonth()+1; 
+    var day     = now.getDate();
+    var hour    = now.getHours();
+    var minute  = now.getMinutes();
+    var second  = now.getSeconds(); 
+    if(month.toString().length == 1) {
+         month = '0'+month;
+    }
+    if(day.toString().length == 1) {
+         day = '0'+day;
+    }   
+    if(hour.toString().length == 1) {
+         hour = '0'+hour;
+    }
+    if(minute.toString().length == 1) {
+         minute = '0'+minute;
+    }
+    if(second.toString().length == 1) {
+         second = '0'+second;
+    }   
+    var dateTime = year+'-'+month+'-'+day+' '+hour+':'+minute+':'+second;   
+     return dateTime;
   }
 
   function handleMixPlayers() {
@@ -148,6 +195,8 @@ export default function MixerPage() {
     }
 
     setMixed(mixedCourts);
+    var localTime = getDateTime();
+    postStat({ deviceId, localTime, activePlayers, activeCourts });
   }
 
   return (

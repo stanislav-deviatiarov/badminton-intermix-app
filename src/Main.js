@@ -30,7 +30,7 @@ function MainPage() {
       break;
 
     default:
-    case Pages.Settings:
+    case Pages.Mixer:
       pageContent = <MixerPage />;
       break;
   }
