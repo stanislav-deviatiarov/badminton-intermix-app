@@ -93,7 +93,7 @@ export default function MixerPage() {
   function postStat(statObject) {
     saveMixedObjectToStorage(statObject);
 
-    fetch("https://localhost:7150/api/Stat/PostGameDetails", {
+    fetch("https://badminton-api.runasp.net/api/Stat/PostGameDetails", {
       method: "POST",
       headers: { "Content-type": "application/json; charset=UTF-8" },
       body: JSON.stringify(statObject)
