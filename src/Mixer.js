@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ItemList from './ItemList'
 import { initialCourts } from './CourtsList'
 import { savePlayersToStorage, loadPlayersFromStorage, saveCourtsToStorage, loadCourtsFromStorage, saveMixedObjectToStorage, loadDeviceIdFromStorage, saveDeviceIdToStorage } from './Storage'
@@ -8,8 +8,9 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import MixedItem from './MixedItem';
 import Paper from '@mui/material/Paper'
+import Autocomplete from '@mui/material/Autocomplete';
 
-function CreateNewID() {
+function CreateNewId() {
   return Date.now().toString();
 }
 
@@ -20,7 +21,7 @@ function ConvertPlayers(players) {
     if (player.id.toString().length < 5) {
       shouldStore = true;
       let currentId = player.id.toString();
-      newPlayers.push({ ...player, id: CreateNewID() + currentId });
+      newPlayers.push({ ...player, id: CreateNewId() + currentId });
     } else {
       newPlayers.push(player);
     }
@@ -28,13 +29,40 @@ function ConvertPlayers(players) {
   return { convertedPlayers: newPlayers, store: shouldStore };
 }
 
+function ConvertCourts(courts) {
+  console.log(courts);
+  for (let index = 0; index < 7; index++) {
+    courts[index].id = index + 1; 
+  }
+  return courts;
+}
+
+const emptyPlayerObject = { id: '', label: '' };
+
+const badmintonApiOrigin = 
+//'https://localhost:7150';
+'https://badminton-api.runasp.net';
+
 export default function MixerPage() {
-  const [playerName, setPlayerName] = useState('');
+  const [playerObject, setPlayerObject] = useState(emptyPlayerObject);
+  const [playerOptions, setPlayerOptions] = useState([]);
   const converted = ConvertPlayers(loadPlayersFromStorage());
 
-  var deviceId = loadDeviceIdFromStorage();
+  useEffect(() => {
+    fetch(badmintonApiOrigin + '/api/Stat/GetAvailablePlayers', {
+      method: 'GET',
+      headers: { 'Content-type': 'application/json; charset=UTF-8' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      setPlayerOptions(data.map(d => ({ id: d.id, label: d.name })));
+    })
+    .catch(console.error);
+  }, []);
+
+  let deviceId = loadDeviceIdFromStorage();
   if (deviceId === '') {
-    deviceId = CreateNewID();
+    deviceId = CreateNewId();
     saveDeviceIdToStorage(deviceId);
   }
 
@@ -44,22 +72,37 @@ export default function MixerPage() {
 
   const [players, setPlayers] = useState(converted.convertedPlayers);
   let storedCourts = loadCourtsFromStorage();
-  const [courts, setCourts] = useState(storedCourts.length === 0 ? initialCourts : storedCourts);
+  const [courts, setCourts] = useState(
+    ConvertCourts(storedCourts.length === 0 ? initialCourts : storedCourts));
   const [mixed, setMixed] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
   function handleAddNewPlayer() {
-    if (playerName === '') {
+    if (playerObject.label === emptyPlayerObject.label) {
+      setErrorMessage("Введіть ім'я гравця");
       return;
     }
-    
+
+    if (players.map(p => p.id).includes(playerObject.id)) {
+      setErrorMessage("Такий гравець вже є у списку");
+      return;
+    }
+
+    if (playerObject.id === emptyPlayerObject.id) {
+      playerObject.id = CreateNewId();
+    }
+
+    let currentPlayer = { id: playerObject.id, name: playerObject.label, active: false };
+
     let nextPlayers = [
       ...players,
-      { id: CreateNewID(), name: playerName, active: false }
+      currentPlayer
     ];
 
     savePlayersToStorage(nextPlayers);
     setPlayers(nextPlayers);
-    setPlayerName('');
+    setPlayerObject(emptyPlayerObject);
+    setPlayerOptions([...playerOptions, playerObject]);
   }
 
   function handlePlayerToggle(id) {
@@ -93,9 +136,9 @@ export default function MixerPage() {
   function postStat(statObject) {
     saveMixedObjectToStorage(statObject);
 
-    fetch("https://badminton-api.runasp.net/api/Stat/PostGameDetails", {
-      method: "POST",
-      headers: { "Content-type": "application/json; charset=UTF-8" },
+    fetch(badmintonApiOrigin + '/api/Stat/PostGameDetails', {
+      method: 'POST',
+      headers: { 'Content-type': 'application/json; charset=UTF-8' },
       body: JSON.stringify(statObject)
     })
     .then(response => console.log(response.status))
@@ -105,13 +148,13 @@ export default function MixerPage() {
   }
 
   function getDateTime() {
-    var now     = new Date(); 
-    var year    = now.getFullYear();
-    var month   = now.getMonth()+1; 
-    var day     = now.getDate();
-    var hour    = now.getHours();
-    var minute  = now.getMinutes();
-    var second  = now.getSeconds(); 
+    let now     = new Date(); 
+    let year    = now.getFullYear();
+    let month   = now.getMonth()+1; 
+    let day     = now.getDate();
+    let hour    = now.getHours();
+    let minute  = now.getMinutes();
+    let second  = now.getSeconds(); 
     if(month.toString().length == 1) {
          month = '0'+month;
     }
@@ -127,7 +170,7 @@ export default function MixerPage() {
     if(second.toString().length == 1) {
          second = '0'+second;
     }   
-    var dateTime = year+'-'+month+'-'+day+' '+hour+':'+minute+':'+second;   
+    let dateTime = year+'-'+month+'-'+day+' '+hour+':'+minute+':'+second;   
      return dateTime;
   }
 
@@ -195,7 +238,7 @@ export default function MixerPage() {
     }
 
     setMixed(mixedCourts);
-    var localTime = getDateTime();
+    let localTime = getDateTime();
     postStat({ deviceId, localTime, activePlayers, activeCourts });
   }
 
@@ -205,7 +248,30 @@ export default function MixerPage() {
   Крок 1: Оберіть гравців
   </Typography>
   <Stack direction={'row'} spacing={2}>
-  <TextField fullWidth label="Ім'я гравця" variant='standard' onChange={e => setPlayerName(e.target.value)} maxLength={12} value={playerName} />
+  <Autocomplete
+    id="free-solo-demo"
+    freeSolo
+    options={playerOptions}
+    sx = {{ width: 200 }}
+    value={playerObject.label}
+    onChange={(event, newValue) => {
+      setErrorMessage('');
+      if (newValue && newValue !== 'null') {
+        setPlayerObject(newValue);
+      }
+    }}
+    inputValue={playerObject.label}
+    onInputChange={(event, newInputValue) => {
+      setErrorMessage('');
+      setPlayerObject({ id: '', label: newInputValue });
+    }}
+    renderInput={(params) =>
+      <TextField
+        {...params}
+        label="Ім'я гравця" variant='standard'
+        error={errorMessage !== ''}
+        helperText={errorMessage}/>}
+  />
   <Button variant='contained' onClick={handleAddNewPlayer} size='medium'>Додати</Button>
   </Stack>
   <ItemList listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} allowDeletion={true} />
