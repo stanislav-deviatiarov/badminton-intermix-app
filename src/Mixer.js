@@ -39,9 +39,86 @@ function ConvertCourts(courts) {
 
 const emptyPlayerObject = { id: '', label: '' };
 
-const badmintonApiOrigin = 
-//'https://localhost:7150';
-'https://badminton-api.runasp.net';
+const tempPlayersList = [
+  { "id": "48219037", "label": "Оленка К" },
+  { "id": "30581649", "label": "Юрій Н" },
+  { "id": "72943085", "label": "Діма З" },
+  { "id": "18320496", "label": "Стас Д" },
+  { "id": "96754023", "label": "Сергій Л" },
+  { "id": "26073891", "label": "Оксана Ж" },
+  { "id": "31486920", "label": "Дарія Б" },
+  { "id": "80571642", "label": "Катя В" },
+  { "id": "10958243", "label": "Іра В" },
+  { "id": "64728109", "label": "Андрій Т" },
+  { "id": "70849236", "label": "Діана С" },
+  { "id": "19560438", "label": "Олесь Д" },
+  { "id": "42317860", "label": "Катя Ч" },
+  { "id": "87913204", "label": "Катя Б" },
+  { "id": "60271938", "label": "Тарас Б" },
+  { "id": "34789201", "label": "Володя Х" },
+  { "id": "90482671", "label": "Рік М" },
+  { "id": "71842950", "label": "Андрій П" },
+  { "id": "50913462", "label": "Світлана С" },
+  { "id": "23648790", "label": "Петро В" },
+  { "id": "89052147", "label": "Таня П" },
+  { "id": "63184029", "label": "Аня Д" },
+  { "id": "70215984", "label": "Юра Б" },
+  { "id": "15829460", "label": "Руслан Б" },
+  { "id": "48193076", "label": "Ніна К" },
+  { "id": "76439025", "label": "Ігор К" },
+  { "id": "31975482", "label": "Галя Б" },
+  { "id": "84561273", "label": "Наталя К" },
+  { "id": "20496718", "label": "Арам К" },
+  { "id": "95374810", "label": "Юра Ф" },
+  { "id": "13789624", "label": "Наталя З" },
+  { "id": "38962741", "label": "Андрій Д" },
+  { "id": "61839524", "label": "Ігор Г" },
+  { "id": "29468130", "label": "Вікторія К" },
+  { "id": "50617298", "label": "Михайло П" },
+  { "id": "47183092", "label": "Андрій В" },
+  { "id": "68741952", "label": "Іван П" },
+  { "id": "21360987", "label": "Остап Н" },
+  { "id": "39467285", "label": "Марта П" },
+  { "id": "82194360", "label": "Ростислав Г" },
+  { "id": "10973284", "label": "Уляна Г" },
+  { "id": "73019468", "label": "Антон Ф" },
+  { "id": "95627381", "label": "Роксоланка Б" },
+  { "id": "60124839", "label": "Арам К" },
+  { "id": "27530946", "label": "Маріанна Н" },
+  { "id": "34782016", "label": "Оля Д" },
+  { "id": "57890214", "label": "Павло Ш" },
+  { "id": "89276467", "label": "Ліля С" },
+  { "id": "90382625", "label": "Богдан Л" },
+  { "id": "48273619", "label": "Ігор П" },
+  { "id": "91720458", "label": "Богдан Д" },
+  { "id": "23018476", "label": "Мар'яна Л" },
+  { "id": "70493215", "label": "Володя Б" },
+  { "id": "16380927", "label": "Марічка Г" },
+  { "id": "89501362", "label": "Сашко П" },
+  { "id": "57420981", "label": "Денис В" },
+  { "id": "69013847", "label": "Роксоланка Р" },
+  { "id": "24876130", "label": "Еліна Б" },
+  { "id": "91520764", "label": "Олег Д" },
+  { "id": "83609125", "label": "Олександра З" },
+  { "id": "19257460", "label": "Юра К" },
+  { "id": "50813647", "label": "Володя О" },
+  { "id": "63724901", "label": "Сашко А" },
+  { "id": "75918264", "label": "Сашко М" },
+  { "id": "48019273", "label": "Сергій П" },
+  { "id": "83164709", "label": "Віка П" },
+  { "id": "27961583", "label": "Влад М" }
+];
+
+function generateUniqueId(existingIds, length = 8) {
+  let id;
+  do {
+    id = Math.floor(Math.random() * Math.pow(10, length))
+      .toString()
+      .padStart(length, '0');
+  } while (existingIds.has(id));
+  existingIds.add(id);
+  return id;
+}
 
 export default function MixerPage() {
   const [playerObject, setPlayerObject] = useState(emptyPlayerObject);
@@ -49,15 +126,7 @@ export default function MixerPage() {
   const converted = ConvertPlayers(loadPlayersFromStorage());
 
   useEffect(() => {
-    fetch(badmintonApiOrigin + '/api/Stat/GetAvailablePlayers', {
-      method: 'GET',
-      headers: { 'Content-type': 'application/json; charset=UTF-8' }
-    })
-    .then(response => response.json())
-    .then(data => {
-      setPlayerOptions(data.map(d => ({ id: d.id, label: d.name })));
-    })
-    .catch(console.error);
+    setPlayerOptions(tempPlayersList);
   }, []);
 
   let deviceId = loadDeviceIdFromStorage();
@@ -135,16 +204,6 @@ export default function MixerPage() {
 
   function postStat(statObject) {
     saveMixedObjectToStorage(statObject);
-
-    fetch(badmintonApiOrigin + '/api/Stat/PostGameDetails', {
-      method: 'POST',
-      headers: { 'Content-type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify(statObject)
-    })
-    .then(response => console.log(response.status))
-    .catch((response) => {
-      console.log(response.status, response.statusText);
-    });
   }
 
   function getDateTime() {
@@ -176,7 +235,10 @@ export default function MixerPage() {
 
   function handleMixPlayers() {
     const activePlayers = players.filter(p => p.active);
-    const activeCourts = courts.filter(c => c.active).map(c => { return { ...c, players: [] }});
+    const activeCourts = courts.filter(c => c.active)
+      .map(c => { return { ...c, players: [] }});
+
+      console.log(activePlayers);
 
     if (activePlayers.length === 0 || activeCourts.length === 0) {
       setMixed([]);
@@ -197,18 +259,18 @@ export default function MixerPage() {
       usedPlayerIndexes.push(randomPlayerIndex);
     }
 
-    while (activePlayersCount - usedPlayerIndexes.length > 0) {
-      let newIndex = getRandomInt(0, activePlayersCount - 1);
-      if (usedPlayerIndexes.find(i => i === newIndex) === undefined) {
-        if (currentCourtIndex < activeCourts.length) {
-          if (activeCourts[currentCourtIndex].players.length < playersOnCourt) {
-            activeCourts[currentCourtIndex].players.push(activePlayers[newIndex].name);
-            usedPlayerIndexes.push(newIndex);
+      while (activePlayersCount - usedPlayerIndexes.length > 0) {
+        let newIndex = getRandomInt(0, activePlayersCount - 1);
+        if (usedPlayerIndexes.find(i => i === newIndex) === undefined) {
+          if (currentCourtIndex < activeCourts.length) {
+            if (activeCourts[currentCourtIndex].players.length < playersOnCourt) {
+              activeCourts[currentCourtIndex].players.push(activePlayers[newIndex].name);
+              usedPlayerIndexes.push(newIndex);
+            } else {
+              currentCourtIndex++;
+            }
           } else {
-            currentCourtIndex++;
-          }
-        } else {
-          break;
+            break;
         }
       }
     }
@@ -249,10 +311,13 @@ export default function MixerPage() {
   </Typography>
   <Stack direction={'row'} spacing={2}>
   <Autocomplete
+      PaperComponent={({ children }) => (
+          <Paper style={{ backgroundColor: '#003399', fontSize: 20, fontFamily: 'fantasy' }}>{children}</Paper>
+        )}
     id="free-solo-demo"
     freeSolo
     options={playerOptions}
-    sx = {{ width: 200 }}
+    sx = {{ width: 400 }}
     value={playerObject.label}
     onChange={(event, newValue) => {
       setErrorMessage('');
