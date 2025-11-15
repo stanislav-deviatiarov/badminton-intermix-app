@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import MixedItem from './MixedItem';
 import Paper from '@mui/material/Paper'
 import Autocomplete from '@mui/material/Autocomplete';
+import MotherOfAllRNG from './MotherOfAllRNG';
 
 function CreateNewId() {
   return Date.now().toString();
@@ -32,7 +33,7 @@ function ConvertPlayers(players) {
 function ConvertCourts(courts) {
   console.log(courts);
   for (let index = 0; index < 7; index++) {
-    courts[index].id = index + 1; 
+    courts[index].id = index + 1;
   }
   return courts;
 }
@@ -106,7 +107,14 @@ const tempPlayersList = [
   { "id": "75918264", "label": "Сашко М" },
   { "id": "48019273", "label": "Сергій П" },
   { "id": "83164709", "label": "Віка П" },
-  { "id": "27961583", "label": "Влад М" }
+  { "id": "27961583", "label": "Влад М" },
+  { "id": "84642425", "label": "Яна З" },
+  { "id": "29652488", "label": "Мар'янка Г" },
+  { "id": "66929426", "label": "Олег Б" },
+  { "id": "95617349", "label": "Денис Д" },
+  { "id": "62253843", "label": "Віталік Ф" },
+  { "id": "95833076", "label": "Настя Б" },
+  { "id": "90884610", "label": "Орест" }
 ];
 
 function generateUniqueId(existingIds, length = 8) {
@@ -145,6 +153,7 @@ export default function MixerPage() {
     ConvertCourts(storedCourts.length === 0 ? initialCourts : storedCourts));
   const [mixed, setMixed] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [lastMixedTime, setLastMixedTime] = useState(null);
 
   function handleAddNewPlayer() {
     if (playerObject.label === emptyPlayerObject.label) {
@@ -196,10 +205,11 @@ export default function MixerPage() {
     setCourts(nextCourts);
   }
 
-  function getRandomInt(min, max) {
+  function getRandomInt(rng, min, max) {
+
     const minCeiled = Math.ceil(min);
     const maxFloored = Math.floor(max);
-    return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
+    return Math.floor(rng.random() * (maxFloored - minCeiled + 1) + minCeiled);
   }
 
   function postStat(statObject) {
@@ -207,38 +217,38 @@ export default function MixerPage() {
   }
 
   function getDateTime() {
-    let now     = new Date(); 
-    let year    = now.getFullYear();
-    let month   = now.getMonth()+1; 
-    let day     = now.getDate();
-    let hour    = now.getHours();
-    let minute  = now.getMinutes();
-    let second  = now.getSeconds(); 
-    if(month.toString().length == 1) {
-         month = '0'+month;
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let day = now.getDate();
+    let hour = now.getHours();
+    let minute = now.getMinutes();
+    let second = now.getSeconds();
+    if (month.toString().length == 1) {
+      month = '0' + month;
     }
-    if(day.toString().length == 1) {
-         day = '0'+day;
-    }   
-    if(hour.toString().length == 1) {
-         hour = '0'+hour;
+    if (day.toString().length == 1) {
+      day = '0' + day;
     }
-    if(minute.toString().length == 1) {
-         minute = '0'+minute;
+    if (hour.toString().length == 1) {
+      hour = '0' + hour;
     }
-    if(second.toString().length == 1) {
-         second = '0'+second;
-    }   
-    let dateTime = year+'-'+month+'-'+day+' '+hour+':'+minute+':'+second;   
-     return dateTime;
+    if (minute.toString().length == 1) {
+      minute = '0' + minute;
+    }
+    if (second.toString().length == 1) {
+      second = '0' + second;
+    }
+    let dateTime = year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+    return dateTime;
   }
 
   function handleMixPlayers() {
     const activePlayers = players.filter(p => p.active);
     const activeCourts = courts.filter(c => c.active)
-      .map(c => { return { ...c, players: [] }});
+      .map(c => { return { ...c, players: [] } });
 
-      console.log(activePlayers);
+    console.log(activePlayers);
 
     if (activePlayers.length === 0 || activeCourts.length === 0) {
       setMixed([]);
@@ -253,24 +263,37 @@ export default function MixerPage() {
 
     let restingPlayers = [];
 
+    let seed = Date.now();
+    if (lastMixedTime !== null) {
+      console.log('lastMixedTime: ' + lastMixedTime);
+      seed = seed - lastMixedTime;
+      setLastMixedTime(Date.now());
+    } else {
+      console.log('first mix');
+      setLastMixedTime(seed);
+    }
+
+    console.log('seed: ' + seed);
+    const rng = new MotherOfAllRNG(seed);
+
     if (activePlayersCount % 2 !== 0) {
-      let randomPlayerIndex = getRandomInt(0, activePlayersCount - 1);
+      let randomPlayerIndex = getRandomInt(rng, 0, activePlayersCount - 1);
       restingPlayers.push(activePlayers[randomPlayerIndex].name);
       usedPlayerIndexes.push(randomPlayerIndex);
     }
 
-      while (activePlayersCount - usedPlayerIndexes.length > 0) {
-        let newIndex = getRandomInt(0, activePlayersCount - 1);
-        if (usedPlayerIndexes.find(i => i === newIndex) === undefined) {
-          if (currentCourtIndex < activeCourts.length) {
-            if (activeCourts[currentCourtIndex].players.length < playersOnCourt) {
-              activeCourts[currentCourtIndex].players.push(activePlayers[newIndex].name);
-              usedPlayerIndexes.push(newIndex);
-            } else {
-              currentCourtIndex++;
-            }
+    while (activePlayersCount - usedPlayerIndexes.length > 0) {
+      let newIndex = getRandomInt(rng, 0, activePlayersCount - 1);
+      if (usedPlayerIndexes.find(i => i === newIndex) === undefined) {
+        if (currentCourtIndex < activeCourts.length) {
+          if (activeCourts[currentCourtIndex].players.length < playersOnCourt) {
+            activeCourts[currentCourtIndex].players.push(activePlayers[newIndex].name);
+            usedPlayerIndexes.push(newIndex);
           } else {
-            break;
+            currentCourtIndex++;
+          }
+        } else {
+          break;
         }
       }
     }
@@ -295,8 +318,8 @@ export default function MixerPage() {
       }
 
       mixedCourts.push(
-      <div><Paper elevation={5} sx={{ padding: 1 }} ><Typography variant="h5" gutterBottom>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває' }</Typography>
-      <Stack>{resting}</Stack></Paper></div>);
+        <div><Paper elevation={5} sx={{ padding: 1 }} ><Typography variant="h5" gutterBottom>{resting.length > 1 ? 'Відпочивають' : 'Відпочиває'}</Typography>
+          <Stack>{resting}</Stack></Paper></div>);
     }
 
     setMixed(mixedCourts);
@@ -305,51 +328,51 @@ export default function MixerPage() {
   }
 
   return (
-  <Stack spacing={1}>
-  <Typography variant="h5" gutterBottom>
-  Крок 1: Оберіть гравців
-  </Typography>
-  <Stack direction={'row'} spacing={2}>
-  <Autocomplete
-      PaperComponent={({ children }) => (
-          <Paper style={{ backgroundColor: '#003399', fontSize: 20, fontFamily: 'fantasy' }}>{children}</Paper>
-        )}
-    id="free-solo-demo"
-    freeSolo
-    options={playerOptions}
-    sx = {{ width: 400 }}
-    value={playerObject.label}
-    onChange={(event, newValue) => {
-      setErrorMessage('');
-      if (newValue && newValue !== 'null') {
-        setPlayerObject(newValue);
-      }
-    }}
-    inputValue={playerObject.label}
-    onInputChange={(event, newInputValue) => {
-      setErrorMessage('');
-      setPlayerObject({ id: '', label: newInputValue });
-    }}
-    renderInput={(params) =>
-      <TextField
-        {...params}
-        label="Ім'я гравця" variant='standard'
-        error={errorMessage !== ''}
-        helperText={errorMessage}/>}
-  />
-  <Button variant='contained' onClick={handleAddNewPlayer} size='medium'>Додати</Button>
-  </Stack>
-  <ItemList listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} allowDeletion={true} />
-  <Typography variant="h5" gutterBottom>
-  Крок 2: Оберіть корти
-  </Typography>
-  <ItemList listElements={courts} onToggle={handleCourtToggle} allowDeletion={false} />
-  <Stack>
-  <Button variant='contained' onClick={handleMixPlayers} size='medium'>Порахувати</Button>
-  </Stack>
-  <Stack spacing={2}>
-  {mixed}
-  </Stack>
-  </Stack>
+    <Stack spacing={1}>
+      <Typography variant="h5" gutterBottom>
+        Крок 1: Оберіть гравців
+      </Typography>
+      <Stack direction={'row'} spacing={2}>
+        <Autocomplete
+          PaperComponent={({ children }) => (
+            <Paper style={{ backgroundColor: '#003399', fontSize: 20, fontFamily: 'fantasy' }}>{children}</Paper>
+          )}
+          id="free-solo-demo"
+          freeSolo
+          options={playerOptions}
+          sx={{ width: 400 }}
+          value={playerObject.label}
+          onChange={(event, newValue) => {
+            setErrorMessage('');
+            if (newValue && newValue !== 'null') {
+              setPlayerObject(newValue);
+            }
+          }}
+          inputValue={playerObject.label}
+          onInputChange={(event, newInputValue) => {
+            setErrorMessage('');
+            setPlayerObject({ id: '', label: newInputValue });
+          }}
+          renderInput={(params) =>
+            <TextField
+              {...params}
+              label="Ім'я гравця" variant='standard'
+              error={errorMessage !== ''}
+              helperText={errorMessage} />}
+        />
+        <Button variant='contained' onClick={handleAddNewPlayer} size='medium'>Додати</Button>
+      </Stack>
+      <ItemList listElements={players} onToggle={handlePlayerToggle} onDelete={handlePlayerDelete} allowDeletion={true} />
+      <Typography variant="h5" gutterBottom>
+        Крок 2: Оберіть корти
+      </Typography>
+      <ItemList listElements={courts} onToggle={handleCourtToggle} allowDeletion={false} />
+      <Stack>
+        <Button variant='contained' onClick={handleMixPlayers} size='medium'>Порахувати</Button>
+      </Stack>
+      <Stack spacing={2}>
+        {mixed}
+      </Stack>
+    </Stack>
   );
 }
