@@ -164,6 +164,9 @@ export default function MixerPage() {
   const [mixed, setMixed] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [lastMixedTime, setLastMixedTime] = useState(null);
+  const [restOffset, setRestOffset] = useState(0);
+  const [lastCourt7PlayerIds, setLastCourt7PlayerIds] = useState([]);
+  const [lastCourt7PairIds, setLastCourt7PairIds] = useState([]);
 
   function handleGenderChange(newGender) {
     setErrorMessage('');
@@ -249,38 +252,8 @@ export default function MixerPage() {
     return result;
   }
 
-  function generateAssignment(rng, activePlayers, activeCourts, allPairs) {
+  function generateAssignment(rng, units, activeCourts, bannedForCourt7) {
     const playersOnCourt = 4;
-    const playerById = new Map(players.map(p => [p.id, p]));
-
-    const activePairs = allPairs.filter(pair =>
-      pair.playerIds &&
-      pair.playerIds.length === 2 &&
-      pair.playerIds.every(id => activePlayers.some(p => p.id === id))
-    );
-
-    const usedInPairIds = new Set();
-    for (let pair of activePairs) {
-      for (let pid of pair.playerIds) {
-        usedInPairIds.add(pid);
-      }
-    }
-
-    const singlePlayers = activePlayers.filter(p => !usedInPairIds.has(p.id));
-
-    const units = [];
-
-    for (let pair of activePairs) {
-      const members = pair.playerIds.map(id => playerById.get(id)).filter(Boolean);
-      if (members.length === 2) {
-        units.push({ type: 'pair', players: members, pairId: pair.id });
-      }
-    }
-
-    for (let p of singlePlayers) {
-      units.push({ type: 'single', players: [p] });
-    }
-
     const shuffledUnits = shuffleArray(rng, units);
 
     const courtsWithTeams = activeCourts.map(court => ({
@@ -288,20 +261,28 @@ export default function MixerPage() {
       teams: [[], []]
     }));
 
-    let courtIndex = 0;
     const restingUnits = [];
+    const placedPairIds = new Set();
 
     for (let unit of shuffledUnits) {
-      if (courtIndex >= courtsWithTeams.length) {
-        restingUnits.push(unit);
-        continue;
-      }
-
       let placed = false;
-      let searchIndex = courtIndex;
+      let searchIndex = 0;
 
       while (searchIndex < courtsWithTeams.length && !placed) {
         const court = courtsWithTeams[searchIndex];
+        const isCourt7 = court.id === 7 || (court.name && court.name.toString().includes('7'));
+
+        if (isCourt7) {
+          if (unit.type === 'pair' && bannedForCourt7.bannedPairIds.has(unit.pairId)) {
+            searchIndex++;
+            continue;
+          }
+          if (unit.players.some(p => bannedForCourt7.bannedPlayerIds.has(p.id))) {
+            searchIndex++;
+            continue;
+          }
+        }
+
         const totalPlayersOnCourt = court.teams[0].length + court.teams[1].length;
         const remainingSlots = playersOnCourt - totalPlayersOnCourt;
 
@@ -319,6 +300,9 @@ export default function MixerPage() {
           }
 
           placed = true;
+          if (unit.type === 'pair' && unit.pairId) {
+            placedPairIds.add(unit.pairId);
+          }
         } else {
           searchIndex++;
         }
@@ -329,7 +313,7 @@ export default function MixerPage() {
       }
     }
 
-    return { courtsWithTeams, restingUnits, activePairsUsed: activePairs };
+    return { courtsWithTeams, restingUnits, placedPairIds };
   }
 
   function hasMixedPairOnCourt(courtPlayers, allPairs, playerById) {
@@ -392,13 +376,43 @@ export default function MixerPage() {
   }
 
   function handleMixPlayers() {
-    const activePlayers = players.filter(p => p.active);
+    const selectedPlayers = players.filter(p => p.active);
+    const selectedPairs = pairs.filter(pair => pair.active);
     const activeCourts = courts.filter(c => c.active)
       .map(c => { return { ...c, players: [] } });
 
-    console.log(activePlayers);
+    if (selectedPlayers.length === 0 && selectedPairs.length === 0 || activeCourts.length === 0) {
+      setMixed([]);
+      return;
+    }
 
-    if (activePlayers.length === 0 || activeCourts.length === 0) {
+    const playerById = new Map(players.map(p => [p.id, p]));
+
+    const pairUnits = [];
+    const playersUsedInPair = new Set();
+
+    for (let pair of selectedPairs) {
+      if (!pair.playerIds || pair.playerIds.length !== 2) continue;
+      const [aId, bId] = pair.playerIds;
+      const a = playerById.get(aId);
+      const b = playerById.get(bId);
+      if (!a || !b) continue;
+      // Use as a pair only when both players are NOT selected individually
+      if (!a.active && !b.active) {
+        pairUnits.push({ type: 'pair', players: [a, b], pairId: pair.id });
+        playersUsedInPair.add(aId);
+        playersUsedInPair.add(bId);
+      }
+    }
+
+    const singlePlayers = selectedPlayers.filter(p => !playersUsedInPair.has(p.id));
+
+    const allUnits = [
+      ...pairUnits,
+      ...singlePlayers.map(p => ({ type: 'single', players: [p] }))
+    ];
+
+    if (allUnits.length === 0) {
       setMixed([]);
       return;
     }
@@ -414,14 +428,69 @@ export default function MixerPage() {
     }
 
     console.log('seed: ' + seed);
-    const rngBase = new MotherOfAllRNG(seed);
+
+    // Determine how many players must rest and rotate them, but never under-fill courts
+    const playersOnCourt = 4;
+    const totalPlayersCount = allUnits.reduce((sum, unit) => sum + unit.players.length, 0);
+    const totalCapacity = activeCourts.length * playersOnCourt;
+    let restPlayersCount = 0;
+    if (totalPlayersCount > totalCapacity) {
+      restPlayersCount = totalPlayersCount - totalCapacity;
+    }
+
+    let rotationRestUnits = [];
+    let playingUnits = allUnits;
+
+    if (restPlayersCount > 0) {
+      const orderedUnits = [...allUnits].sort((a, b) => {
+        const aKey = a.type === 'pair' ? `P-${a.pairId}` : `S-${a.players[0].id}`;
+        const bKey = b.type === 'pair' ? `P-${b.pairId}` : `S-${b.players[0].id}`;
+        return aKey.localeCompare(bKey);
+      });
+
+      const totalUnitCount = orderedUnits.length;
+      let offset = totalUnitCount === 0 ? 0 : restOffset % totalUnitCount;
+      const chosenRestingUnits = [];
+      let restedPlayers = 0;
+      let visited = 0;
+
+      while (restedPlayers < restPlayersCount && visited < totalUnitCount) {
+        const unit = orderedUnits[offset];
+        chosenRestingUnits.push(unit);
+        restedPlayers += unit.players.length;
+        offset = (offset + 1) % totalUnitCount;
+        visited++;
+      }
+
+      // If we removed too many players and would under-fill courts, move some units back to play
+      let playingPlayersCount = totalPlayersCount - restedPlayers;
+      while (playingPlayersCount < totalCapacity && chosenRestingUnits.length > 0) {
+        const returnedUnit = chosenRestingUnits.pop();
+        playingPlayersCount += returnedUnit.players.length;
+      }
+
+      setRestOffset(offset);
+
+      const restingSet = new Set(chosenRestingUnits);
+      rotationRestUnits = chosenRestingUnits;
+      playingUnits = allUnits.filter(u => !restingSet.has(u));
+    }
+
+    // Only avoid repeats on court 7 when it does not risk under-filling courts
+    const bannedForCourt7 = totalPlayersCount >= totalCapacity
+      ? { bannedPlayerIds: new Set(), bannedPairIds: new Set() }
+      : {
+          bannedPlayerIds: new Set(lastCourt7PlayerIds),
+          bannedPairIds: new Set(lastCourt7PairIds)
+        };
 
     let bestResult = null;
     const maxAttempts = 20;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const rng = new MotherOfAllRNG(seed + attempt);
-      const { courtsWithTeams, restingUnits, activePairsUsed } = generateAssignment(rng, activePlayers, activeCourts, pairs);
+      const { courtsWithTeams, restingUnits, placedPairIds } = generateAssignment(rng, playingUnits, activeCourts, bannedForCourt7);
+      const activePairsUsed = pairs.filter(p => placedPairIds.has(p.id));
       if (isAssignmentValid(courtsWithTeams, activePairsUsed, players)) {
         bestResult = { courtsWithTeams, restingUnits, activePairsUsed };
         break;
@@ -447,10 +516,15 @@ export default function MixerPage() {
       }
     }
 
+    const allRestingUnits = [...rotationRestUnits, ...restingUnits];
     const restingPlayers = [];
-    for (let unit of restingUnits) {
+    const seenRestingPlayerIds = new Set();
+    for (let unit of allRestingUnits) {
       for (let p of unit.players) {
-        restingPlayers.push(p.name);
+        if (!seenRestingPlayerIds.has(p.id)) {
+          seenRestingPlayerIds.add(p.id);
+          restingPlayers.push(p.name);
+        }
       }
     }
 
@@ -465,9 +539,30 @@ export default function MixerPage() {
           <Stack>{resting}</Stack></Paper></div>);
     }
 
+    // Track who was on court 7 in this mix
+    const court7 = courtsWithTeams.find(c => c.id === 7);
+    let nextLastCourt7PlayerIds = [];
+    let nextLastCourt7PairIds = [];
+    if (court7) {
+      const court7Players = [...court7.teams[0], ...court7.teams[1]];
+      nextLastCourt7PlayerIds = court7Players.map(p => p.id);
+      for (let pair of activePairsUsed) {
+        if (pair.playerIds && pair.playerIds.length === 2) {
+          const [aId, bId] = pair.playerIds;
+          if (nextLastCourt7PlayerIds.includes(aId) && nextLastCourt7PlayerIds.includes(bId)) {
+            nextLastCourt7PairIds.push(pair.id);
+          }
+        }
+      }
+    }
+    setLastCourt7PlayerIds(nextLastCourt7PlayerIds);
+    setLastCourt7PairIds(nextLastCourt7PairIds);
+
+    const allParticipantsPlayers = allUnits.flatMap(unit => unit.players);
+
     setMixed(mixedCourts);
     let localTime = getDateTime();
-    postStat({ deviceId, localTime, activePlayers, courtsWithTeams, restingPlayers, activePairs: activePairsUsed });
+    postStat({ deviceId, localTime, activePlayers: allParticipantsPlayers, courtsWithTeams, restingPlayers, activePairs: activePairsUsed });
   }
 
   return (
