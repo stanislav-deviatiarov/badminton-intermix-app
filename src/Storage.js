@@ -2,6 +2,7 @@ const playersListStorageKey = 'badmintonPlayersList';
 const courtsSorageKey = 'courtsList';
 const mixedStorageKey = 'mixedObject';
 const deviceIdKey = 'deviceId';
+const pairsStorageKey = 'pairsList';
 
 function saveToStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
@@ -43,4 +44,12 @@ export function loadDeviceIdFromStorage() {
 
 export function saveMixedObjectToStorage(mixedObject) {
     saveToStorage(mixedStorageKey, mixedObject);
+}
+
+export function savePairsToStorage(pairs) {
+    saveToStorage(pairsStorageKey, pairs);
+}
+
+export function loadPairsFromStorage() {
+    return loadFromStorage(pairsStorageKey);
 }
