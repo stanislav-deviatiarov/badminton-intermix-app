@@ -252,68 +252,361 @@ export default function MixerPage() {
     return result;
   }
 
+  /** Stronger seed: time delta + crypto bytes when available (better than time alone). */
+  function buildMixSeed(lastMixedTime) {
+    let base = Date.now();
+    if (lastMixedTime !== null) {
+      base -= lastMixedTime;
+    }
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const buf = new Uint32Array(2);
+      crypto.getRandomValues(buf);
+      const extra = (Number(buf[0]) * 0x100000000 + Number(buf[1])) % 2147483647;
+      return (base ^ extra) >>> 0;
+    }
+    return base >>> 0;
+  }
+
+  function isCourtSeven(court) {
+    return court.id === 7 || (court.name && court.name.toString().includes('7'));
+  }
+
+  function courtPlayerTotal(court) {
+    return court.teams[0].length + court.teams[1].length;
+  }
+
+  function isUnitBannedOnCourtSeven(unit, bannedForCourt7, court) {
+    if (!isCourtSeven(court)) return false;
+    if (unit.type === 'pair' && unit.pairId && bannedForCourt7.bannedPairIds.has(unit.pairId)) {
+      return true;
+    }
+    if (unit.players.some(p => bannedForCourt7.bannedPlayerIds.has(p.id))) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Doubles layout: max 2 players per side, max 4 per court.
+   * Pair units always go on one side together (never split across courts or sides).
+   */
+  function tryPlaceUnitOnCourt(court, unit, bannedForCourt7, rng) {
+    if (isUnitBannedOnCourtSeven(unit, bannedForCourt7, court)) {
+      return false;
+    }
+
+    if (unit.type === 'pair') {
+      if (unit.players.length !== 2) return false;
+      if (courtPlayerTotal(court) + 2 > 4) return false;
+      const sides = shuffleArray(rng, [0, 1]);
+      for (const side of sides) {
+        if (court.teams[side].length === 0) {
+          court.teams[side].push(unit.players[0], unit.players[1]);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    const p = unit.players[0];
+    if (courtPlayerTotal(court) >= 4) return false;
+    const sides = shuffleArray(rng, [0, 1]);
+    for (const side of sides) {
+      if (court.teams[side].length < 2) {
+        court.teams[side].push(p);
+        return true;
+      }
+    }
+    return false;
+  }
+
   function generateAssignment(rng, units, activeCourts, bannedForCourt7) {
-    const playersOnCourt = 4;
-    const shuffledUnits = shuffleArray(rng, units);
+    const totalPlayersIn = units.reduce((s, u) => s + u.players.length, 0);
+    const totalCapacity = activeCourts.length * 4;
 
-    const courtsWithTeams = activeCourts.map(court => ({
-      ...court,
-      teams: [[], []]
-    }));
+    function placeOnce() {
+      // Pairs first (each needs an empty side); then singles — avoids gridlock rest with free capacity.
+      const pairUnits = units.filter(u => u.type === 'pair');
+      const singleUnits = units.filter(u => u.type === 'single');
+      const shuffledUnits = [...shuffleArray(rng, pairUnits), ...shuffleArray(rng, singleUnits)];
 
-    const restingUnits = [];
-    const placedPairIds = new Set();
+      const courtsWithTeams = activeCourts.map(court => ({
+        ...court,
+        teams: [[], []]
+      }));
 
-    for (let unit of shuffledUnits) {
-      let placed = false;
-      let searchIndex = 0;
+      const restingUnits = [];
+      const placedPairIds = new Set();
+      const courtIndices = shuffleArray(rng, courtsWithTeams.map((_, i) => i));
 
-      while (searchIndex < courtsWithTeams.length && !placed) {
-        const court = courtsWithTeams[searchIndex];
-        const isCourt7 = court.id === 7 || (court.name && court.name.toString().includes('7'));
-
-        if (isCourt7) {
-          if (unit.type === 'pair' && bannedForCourt7.bannedPairIds.has(unit.pairId)) {
-            searchIndex++;
-            continue;
-          }
-          if (unit.players.some(p => bannedForCourt7.bannedPlayerIds.has(p.id))) {
-            searchIndex++;
-            continue;
+      for (let unit of shuffledUnits) {
+        let placed = false;
+        for (let k = 0; k < courtIndices.length && !placed; k++) {
+          const court = courtsWithTeams[courtIndices[k]];
+          if (tryPlaceUnitOnCourt(court, unit, bannedForCourt7, rng)) {
+            placed = true;
+            if (unit.type === 'pair' && unit.pairId) {
+              placedPairIds.add(unit.pairId);
+            }
           }
         }
-
-        const totalPlayersOnCourt = court.teams[0].length + court.teams[1].length;
-        const remainingSlots = playersOnCourt - totalPlayersOnCourt;
-
-        if (unit.players.length <= remainingSlots) {
-          const firstTeamFree = playersOnCourt - (court.teams[0].length + unit.players.length) >= 0;
-          const secondTeamFree = playersOnCourt - (court.teams[1].length + unit.players.length) >= 0;
-
-          if (firstTeamFree && (court.teams[0].length <= court.teams[1].length || !secondTeamFree)) {
-            court.teams[0].push(...unit.players);
-          } else if (secondTeamFree) {
-            court.teams[1].push(...unit.players);
-          } else {
-            searchIndex++;
-            continue;
-          }
-
-          placed = true;
-          if (unit.type === 'pair' && unit.pairId) {
-            placedPairIds.add(unit.pairId);
-          }
-        } else {
-          searchIndex++;
+        if (!placed) {
+          restingUnits.push(unit);
         }
       }
 
-      if (!placed) {
-        restingUnits.push(unit);
+      return { courtsWithTeams, restingUnits, placedPairIds };
+    }
+
+    let result = placeOnce();
+    if (result.restingUnits.length > 0 && totalPlayersIn <= totalCapacity) {
+      const second = placeOnce();
+      const restP = u => u.reduce((s, x) => s + x.players.length, 0);
+      if (restP(second.restingUnits) < restP(result.restingUnits)) {
+        result = second;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Split players into groups; only merge two players if they belong to the same
+   * merged pair unit this round (pairsLocked). Do not merge DB pairs when they play as singles.
+   */
+  function buildPairGroupsOnCourt(playersOnCourt, pairsLocked) {
+    const used = new Set();
+    const groups = [];
+    for (const p of playersOnCourt) {
+      if (used.has(p.id)) continue;
+      const pid = getPartnerId(p.id, pairsLocked);
+      const partner = pid ? playersOnCourt.find(x => x.id === pid) : null;
+      if (partner && !used.has(partner.id)) {
+        used.add(p.id);
+        used.add(partner.id);
+        groups.push([p, partner]);
+      } else {
+        used.add(p.id);
+        groups.push([p]);
+      }
+    }
+    return groups;
+  }
+
+  /** Put 4 players on court as 2+2 without splitting merged pairs across teams. */
+  function placeFourPlayersPreservingPairs(court, fourPlayers, pairsLocked) {
+    if (fourPlayers.length !== 4) return;
+    const groups = buildPairGroupsOnCourt(fourPlayers, pairsLocked);
+    if (groups.length === 2 && groups[0].length === 2 && groups[1].length === 2) {
+      court.teams[0] = [...groups[0]];
+      court.teams[1] = [...groups[1]];
+      return;
+    }
+    if (groups.length === 3) {
+      const pairG = groups.find(g => g.length === 2);
+      const singles = groups.filter(g => g.length === 1).map(g => g[0]);
+      if (pairG && singles.length === 2) {
+        court.teams[0] = [...pairG];
+        court.teams[1] = [...singles];
+        return;
+      }
+    }
+    court.teams[0] = fourPlayers.slice(0, 2);
+    court.teams[1] = fourPlayers.slice(2, 4);
+  }
+
+  function getPartnerId(playerId, allPairs) {
+    for (const pair of allPairs) {
+      if (!pair.playerIds || pair.playerIds.length !== 2) continue;
+      const [a, b] = pair.playerIds;
+      if (a === playerId) return b;
+      if (b === playerId) return a;
+    }
+    return null;
+  }
+
+  function flattenCourtPlayers(court) {
+    return [...court.teams[0], ...court.teams[1]];
+  }
+
+  function removePlayerFromCourt(court, playerId) {
+    for (const side of [0, 1]) {
+      const idx = court.teams[side].findIndex(p => p.id === playerId);
+      if (idx >= 0) {
+        const [removed] = court.teams[side].splice(idx, 1);
+        return removed;
+      }
+    }
+    return null;
+  }
+
+  function setCourtFromFourPlayers(court, fourPlayers) {
+    court.teams[0] = [fourPlayers[0], fourPlayers[1]];
+    court.teams[1] = [fourPlayers[2], fourPlayers[3]];
+  }
+
+  function isSideAllMale(team) {
+    return team.length === 2 && team.every(p => p.gender === 'male');
+  }
+
+  function isSideAllFemale(team) {
+    return team.length === 2 && team.every(p => p.gender === 'female');
+  }
+
+  function pairPartnersOnSameSide(court, p1, p2) {
+    const on0 = court.teams[0].some(p => p.id === p1.id) && court.teams[0].some(p => p.id === p2.id);
+    const on1 = court.teams[1].some(p => p.id === p1.id) && court.teams[1].some(p => p.id === p2.id);
+    return on0 || on1;
+  }
+
+  function allPairsIntactOnCourt(court, pairsLocked) {
+    const all = flattenCourtPlayers(court);
+    const ids = new Set(all.map(p => p.id));
+    for (const pr of pairsLocked) {
+      if (!pr.playerIds || pr.playerIds.length !== 2) continue;
+      const [a, b] = pr.playerIds;
+      if (ids.has(a) && ids.has(b)) {
+        const pa = all.find(p => p.id === a);
+        const pb = all.find(p => p.id === b);
+        if (pa && pb && !pairPartnersOnSameSide(court, pa, pb)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /** MM vs WW on opposite sides → cross-swap to two mixed sides (M+W vs M+W). */
+  function fixHomogeneousOppositeSides(court, pairsLocked) {
+    if (court.teams[0].length !== 2 || court.teams[1].length !== 2) return;
+    const mmVsWw = isSideAllMale(court.teams[0]) && isSideAllFemale(court.teams[1]);
+    const wwVsMm = isSideAllFemale(court.teams[0]) && isSideAllMale(court.teams[1]);
+    if (!mmVsWw && !wwVsMm) return;
+
+    const next = [...court.teams[0], ...court.teams[1]];
+    // [A,B] vs [C,D] → [A,C] vs [B,D] (one from each side)
+    setCourtFromFourPlayers(court, [next[0], next[2], next[1], next[3]]);
+    if (!allPairsIntactOnCourt(court, pairsLocked)) {
+      setCourtFromFourPlayers(court, next);
+    }
+  }
+
+  function findSoloGenderToRemove(allOnCourt, gender, pairsLocked) {
+    for (const p of allOnCourt) {
+      if (p.gender !== gender) continue;
+      const pid = getPartnerId(p.id, pairsLocked);
+      if (!pid) return p;
+      const partnerHere = allOnCourt.some(x => x.id === pid);
+      if (!partnerHere) return p;
+    }
+    return allOnCourt.find(p => p.gender === gender) ?? null;
+  }
+
+  /**
+   * 3M+1W or 1M+3W: swap with rest when possible, then normalize to 2+2 and mixed doubles.
+   */
+  function fixThreeOneWithRest(court, restPool, pairsLocked) {
+    let all = flattenCourtPlayers(court);
+    if (all.length !== 4 || restPool.length === 0) return;
+
+    let m = all.filter(p => p.gender === 'male').length;
+    let w = all.filter(p => p.gender === 'female').length;
+
+    if (m === 3 && w === 1) {
+      const womanFromRest = restPool.find(p => p.gender === 'female');
+      const manToRest = findSoloGenderToRemove(all, 'male', pairsLocked);
+      if (womanFromRest && manToRest) {
+        removePlayerFromCourt(court, manToRest.id);
+        restPool.push(manToRest);
+        const ri = restPool.findIndex(p => p.id === womanFromRest.id);
+        if (ri >= 0) restPool.splice(ri, 1);
+        all = flattenCourtPlayers(court);
+        all.push(womanFromRest);
+        if (all.length === 4) {
+          placeFourPlayersPreservingPairs(court, all, pairsLocked);
+        }
+      }
+    } else if (m === 1 && w === 3) {
+      const manFromRest = restPool.find(p => p.gender === 'male');
+      const womanToRest = findSoloGenderToRemove(all, 'female', pairsLocked);
+      if (manFromRest && womanToRest) {
+        removePlayerFromCourt(court, womanToRest.id);
+        restPool.push(womanToRest);
+        const ri = restPool.findIndex(p => p.id === manFromRest.id);
+        if (ri >= 0) restPool.splice(ri, 1);
+        all = flattenCourtPlayers(court);
+        all.push(manFromRest);
+        if (all.length === 4) {
+          placeFourPlayersPreservingPairs(court, all, pairsLocked);
+        }
+      }
+    }
+  }
+
+  /**
+   * With exactly 2M+2W, prefer M+W vs M+W without splitting fixed pairs (incl. M+M / W+W pairs).
+   */
+  function arrangeTwoMixedDoubles(court, pairsLocked) {
+    const all = flattenCourtPlayers(court);
+    if (all.length !== 4) return;
+    const men = all.filter(p => p.gender === 'male');
+    const women = all.filter(p => p.gender === 'female');
+    if (men.length !== 2 || women.length !== 2) return;
+
+    const groups = buildPairGroupsOnCourt(all, pairsLocked);
+
+    if (groups.length === 2 && groups[0].length === 2 && groups[1].length === 2) {
+      court.teams[0] = [...groups[0]];
+      court.teams[1] = [...groups[1]];
+      return;
+    }
+
+    if (groups.length === 3) {
+      const pairG = groups.find(g => g.length === 2);
+      const singles = groups.filter(g => g.length === 1).map(g => g[0]);
+      if (pairG && singles.length === 2) {
+        court.teams[0] = [...pairG];
+        court.teams[1] = [...singles];
+        return;
       }
     }
 
-    return { courtsWithTeams, restingUnits, placedPairIds };
+    const permutations = [
+      [[men[0], women[0]], [men[1], women[1]]],
+      [[men[0], women[1]], [men[1], women[0]]],
+      [[men[1], women[0]], [men[0], women[1]]],
+      [[men[1], women[1]], [men[0], women[0]]]
+    ];
+    for (const [t0, t1] of permutations) {
+      court.teams[0] = [...t0];
+      court.teams[1] = [...t1];
+      if (allPairsIntactOnCourt(court, pairsLocked)) {
+        return;
+      }
+    }
+    placeFourPlayersPreservingPairs(court, all, pairsLocked);
+  }
+
+  function applyCourtGenderAndRestFixes(courtsWithTeams, restPool, pairsLocked) {
+    for (const court of courtsWithTeams) {
+      let all = flattenCourtPlayers(court);
+      if (all.length !== 4) continue;
+
+      fixThreeOneWithRest(court, restPool, pairsLocked);
+      all = flattenCourtPlayers(court);
+      if (all.length === 4) {
+        placeFourPlayersPreservingPairs(court, all, pairsLocked);
+      }
+
+      all = flattenCourtPlayers(court);
+      if (all.length === 4) {
+        const m = all.filter(p => p.gender === 'male').length;
+        const w = all.filter(p => p.gender === 'female').length;
+        if (m === 2 && w === 2) {
+          arrangeTwoMixedDoubles(court, pairsLocked);
+        }
+        fixHomogeneousOppositeSides(court, pairsLocked);
+      }
+    }
   }
 
   function hasMixedPairOnCourt(courtPlayers, allPairs, playerById) {
@@ -350,13 +643,6 @@ export default function MixerPage() {
       }
     }
     return true;
-  }
-
-  function getRandomInt(rng, min, max) {
-
-    const minCeiled = Math.ceil(min);
-    const maxFloored = Math.floor(max);
-    return Math.floor(rng.random() * (maxFloored - minCeiled + 1) + minCeiled);
   }
 
   function postStat(statObject) {
@@ -397,7 +683,8 @@ export default function MixerPage() {
       const a = playerById.get(aId);
       const b = playerById.get(bId);
       if (!a || !b) continue;
-      // Use as a pair only when both players are NOT selected individually
+      // Pair participates as one unit when neither member is ticked in the players list;
+      // placement keeps both on the same side (see tryPlaceUnitOnCourt).
       if (!a.active && !b.active) {
         pairUnits.push({ type: 'pair', players: [a, b], pairId: pair.id });
         playersUsedInPair.add(aId);
@@ -412,19 +699,22 @@ export default function MixerPage() {
       ...singlePlayers.map(p => ({ type: 'single', players: [p] }))
     ];
 
+    const pairsLocked = pairs.filter(p => pairUnits.some(u => u.pairId === p.id));
+
     if (allUnits.length === 0) {
       setMixed([]);
       return;
     }
 
-    let seed = Date.now();
+    let seed;
     if (lastMixedTime !== null) {
       console.log('lastMixedTime: ' + lastMixedTime);
-      seed = seed - lastMixedTime;
+      seed = buildMixSeed(lastMixedTime);
       setLastMixedTime(Date.now());
     } else {
       console.log('first mix');
-      setLastMixedTime(seed);
+      seed = buildMixSeed(null);
+      setLastMixedTime(Date.now());
     }
 
     console.log('seed: ' + seed);
@@ -491,12 +781,34 @@ export default function MixerPage() {
       const rng = new MotherOfAllRNG(seed + attempt);
       const { courtsWithTeams, restingUnits, placedPairIds } = generateAssignment(rng, playingUnits, activeCourts, bannedForCourt7);
       const activePairsUsed = pairs.filter(p => placedPairIds.has(p.id));
+
+      const restPool = [];
+      const seenRest = new Set();
+      for (const u of rotationRestUnits) {
+        for (const p of u.players) {
+          if (!seenRest.has(p.id)) {
+            seenRest.add(p.id);
+            restPool.push(p);
+          }
+        }
+      }
+      for (const u of restingUnits) {
+        for (const p of u.players) {
+          if (!seenRest.has(p.id)) {
+            seenRest.add(p.id);
+            restPool.push(p);
+          }
+        }
+      }
+
+      applyCourtGenderAndRestFixes(courtsWithTeams, restPool, pairsLocked);
+
       if (isAssignmentValid(courtsWithTeams, activePairsUsed, players)) {
-        bestResult = { courtsWithTeams, restingUnits, activePairsUsed };
+        bestResult = { courtsWithTeams, activePairsUsed, finalRestPool: restPool.slice() };
         break;
       }
       if (!bestResult) {
-        bestResult = { courtsWithTeams, restingUnits, activePairsUsed };
+        bestResult = { courtsWithTeams, activePairsUsed, finalRestPool: restPool.slice() };
       }
     }
 
@@ -505,26 +817,22 @@ export default function MixerPage() {
       return;
     }
 
-    const { courtsWithTeams, restingUnits, activePairsUsed } = bestResult;
+    const { courtsWithTeams, activePairsUsed, finalRestPool } = bestResult;
 
     let mixedCourts = [];
     for (let court of courtsWithTeams) {
       const courtPlayers = [...court.teams[0], ...court.teams[1]];
       if (courtPlayers.length > 0) {
-        const courtPlayerNames = courtPlayers.map(p => p.name);
-        mixedCourts.push(<MixedItem courtName={court.name} courtPlayers={courtPlayerNames} />);
+        mixedCourts.push(<MixedItem key={court.id} courtName={court.name} courtPlayers={courtPlayers} />);
       }
     }
 
-    const allRestingUnits = [...rotationRestUnits, ...restingUnits];
     const restingPlayers = [];
     const seenRestingPlayerIds = new Set();
-    for (let unit of allRestingUnits) {
-      for (let p of unit.players) {
-        if (!seenRestingPlayerIds.has(p.id)) {
-          seenRestingPlayerIds.add(p.id);
-          restingPlayers.push(p.name);
-        }
+    for (const p of finalRestPool) {
+      if (!seenRestingPlayerIds.has(p.id)) {
+        seenRestingPlayerIds.add(p.id);
+        restingPlayers.push(p.name);
       }
     }
 
